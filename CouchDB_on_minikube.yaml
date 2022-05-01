@@ -116,8 +116,6 @@ spec:
     protocol: TCP
     targetPort: 5984
   selector:
-    app: users
-    tier: couchdb
+    app: couchdb
+    tier: DB
   type: NodePort
-status:
-  loadBalancer: {}
