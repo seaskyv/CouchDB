@@ -1,0 +1,123 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv01
+  labels:
+    app: couchdb
+spec:
+  storageClassName: data
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 1Gi
+  hostPath:
+    path: /data/pv01/
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv02
+  labels:
+    app: couchdb
+spec:
+  storageClassName: etc
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 10Mi
+  hostPath:
+    path: /data/pv02/
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pvc-couchdb-data
+  labels:
+    app: couchdb
+spec:
+  storageClassName: data
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pvc-couchdb-etc
+  labels:
+    app: couchdb
+spec:
+  storageClassName: etc
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: couchdb
+  labels:
+    app: couchdb
+spec:
+  selector:
+    matchLabels:
+      app: couchdb
+      tier: DB
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: couchdb
+        tier: DB
+    spec:
+      containers:
+      - image: couchdb:latest
+        name: couchdb
+        ports:
+        - containerPort: 5984
+          name: couchdb
+        env:
+        - name: COUCHDB_USER
+          value: admin
+        - name: COUCHDB_PASSWORD
+          value: password
+        volumeMounts:
+        - name: pvc-couchdb-data
+          mountPath: /opt/couchdb/data
+        - name: pvc-couchdb-etc
+          mountPath: /opt/couchdb/etc/local.d 
+      volumes:
+      - name: pvc-couchdb-data
+        persistentVolumeClaim:
+          claimName: pvc-couchdb-data
+      - name: pvc-couchdb-etc
+        persistentVolumeClaim:
+          claimName: pvc-couchdb-etc
+  replicas: 1
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name : couchdb
+  labels:
+    app: couchdb
+    name: couchdb
+spec:
+  ports:
+  - name: 31984-5984
+    nodePort: 31984
+    port: 5984
+    protocol: TCP
+    targetPort: 5984
+  selector:
+    app: users
+    tier: couchdb
+  type: NodePort
+status:
+  loadBalancer: {}
