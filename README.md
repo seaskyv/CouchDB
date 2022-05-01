@@ -20,5 +20,7 @@ $ minikube service list
 Cleanup:
 
 $ kubectl delete all -l app=couchdb
+
 $ kubectl delete pvc -l app=couchdb
+
 $ kubectl delete pv -l app=couchdb
